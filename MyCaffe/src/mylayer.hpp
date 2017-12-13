@@ -10,6 +10,8 @@ private:
 
     int outputnum;
 
+    int gradientnum;
+
 	float *gradient;
 
 	float *outdata;
@@ -45,6 +47,9 @@ public:
         outputnum = output;
     }
 
+    void setGradientnum(int gradient){
+        gradientnum = gradient;
+    }
 
 	void setGradient(float *g , int size){
 		gradient = new float[size];
@@ -100,5 +105,9 @@ public:
 
     int getOutputnum(){
         return outputnum;
+    }
+
+    int getGradientnum(){
+        return gradientnum;
     }
 };

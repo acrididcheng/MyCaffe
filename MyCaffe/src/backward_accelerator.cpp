@@ -16,7 +16,7 @@ void OutputGradient(ioData expectResult,ioData actualResult,gradientData *output
 
 	if(expectResult.dataSize != actualResult.dataSize)
 	{
-		cout<<"error param in forward"<<endl;
+		cout<<"error param in outputGradient"<<endl;
 		return;
 	}
 
@@ -32,9 +32,9 @@ void Backward(gradientData gradient, weightData weight,  ioData data ,gradientDa
 	u32 r,c;
 	float sum = 0;
 
-	if(gradient.gradientSize != weight.inputNum)
+	if(gradient.gradientSize != weight.outputNum)
 	{
-		cout<<"error param in forward"<<endl;
+		cout<<"error param in backward"<<endl;
 		return;
 	}
 	

@@ -13,6 +13,8 @@
 #include "compute.h"
 using namespace caffe;
 using namespace std;
+#define INPUT_NUM 5
+#define OUTPUT_NUM 5
 
 float inputmatrix[][5]=
 {
@@ -42,23 +44,18 @@ bool ReadProtoFromTextFile(const char* filename, Message* proto) {
 
 
 
-void Step(ParamBuf *param, MyNet *mynet)
+void Step( MyNet *mynet, float *input, float *output)
 {
-    int i,time_index,m;
+    int i;
 
     //Forward procedure
     ioData tempinputData,tempoutputData,tempData;
     weightData tempweightData;
-    gradientData tempgradientData;
+    gradientData tempgradientData,tempgradientDataOut;
 
-    srand((int)time(NULL));
-    time_index=rand()%3;
-
-    //for (m = 0; m < param->getMax_iterm(); m++)
-    {
     //first time to operate the tempinputData
-    tempinputData.dataSize = sizeof(inputmatrix[1])/4;
-    tempinputData.data = inputmatrix[1];
+    tempinputData.dataSize = INPUT_NUM;
+    tempinputData.data = input;
     tempweightData.inputNum = tempinputData.dataSize;
 
     for (i = 0; i < mynet->getLayerNum(); i++)
@@ -77,35 +74,63 @@ void Step(ParamBuf *param, MyNet *mynet)
 
         tempoutputData.dataSize = mynet->getML(i)->getOutputnum();
         tempoutputData.data = new float[tempoutputData.dataSize];
-        cout<<tempweightData.outputNum<<endl;
 
         Forward(tempinputData, tempweightData, &tempoutputData);
         
         mynet->getML(i)->setOutdata(tempoutputData.data,mynet->getML(i)->getOutputnum());
     }
 
-    tempinputData.dataSize = sizeof(outputmatrix[1])/4;
-    tempinputData.data = outputmatrix[1];
+    tempinputData.dataSize = OUTPUT_NUM;
+    tempinputData.data = output;
 
     tempData.dataSize = mynet->getML(mynet->getLayerNum()-1)->getOutputnum();
     tempData.data = mynet->getML(mynet->getLayerNum()-1)->getOutdata();
 
+    tempgradientData.gradientSize = mynet->getML(mynet->getLayerNum()-1)->getOutputnum();
+    tempgradientData.gradient = new float[tempgradientData.gradientSize];
+
     OutputGradient( tempinputData, tempData, &tempgradientData );
-    mynet->getML(mynet->getLayerNum()-1)->setGradient(tempoutputData.data, tempoutputData.dataSize);
+    mynet->getML(mynet->getLayerNum()-1)->setGradientnum(tempgradientData.gradientSize);
+    mynet->getML(mynet->getLayerNum()-1)->setGradient(tempgradientData.gradient, tempgradientData.gradientSize);
 
     for (i = mynet->getLayerNum() - 1; i > 0; i--)
     {
-        
+        tempgradientData.gradientSize = mynet->getML(i)->getGradientnum();
+        tempgradientData.gradient = mynet->getML(i)->getGradient();
+
+        tempweightData.inputNum = mynet->getML(i)->getInputnum();
+        tempweightData.outputNum = mynet->getML(i)->getOutputnum();
+        tempweightData.weight = mynet->getML(i)->getWeight();
+
+        tempoutputData.dataSize = mynet->getML(i)->getOutputnum();
+        tempoutputData.data = mynet->getML(i)->getOutdata();
+    
+        tempgradientDataOut.gradientSize = mynet->getML(i-1)->getOutputnum();
+        tempgradientDataOut.gradient = new float[tempgradientDataOut.gradientSize];
+
+        Backward( tempgradientData, tempweightData, tempoutputData, &tempgradientDataOut);
+
+        mynet->getML(i-1)->setGradientnum(tempgradientDataOut.gradientSize);
+        mynet->getML(i-1)->setGradient(tempgradientDataOut.gradient,tempgradientDataOut.gradientSize);     
     }
 
-    }
-
-
-
+    for (i = 0; i < mynet->getLayerNum(); i++)
     {
+        tempgradientData.gradientSize = mynet->getML(i)->getGradientnum();
+        tempgradientData.gradient = mynet->getML(i)->getGradient();
         
-    }
+        tempData.dataSize = mynet->getML(i)->getInputnum();
+        if (i != 0)
+            tempData.data = mynet->getML(i-1)->getOutdata();
+        else
+            tempData.data = input;
 
+        tempweightData.inputNum = mynet->getML(i)->getInputnum();
+        tempweightData.outputNum = mynet->getML(i)->getOutputnum();
+        tempweightData.weight = mynet->getML(i)->getWeight();
+        
+        ApplyUpdate(tempgradientData, tempData, &tempweightData);
+    }
 }
 
 
@@ -165,7 +190,9 @@ int main()
     cout<<"End reading lenet"<<endl;
 
     mynet.getML(0)->setOutdata(outputmatrix[1],sizeof(outputmatrix[1])/4);
-    Step(&param, &mynet);
+
+
+    Step(&mynet, inputmatrix[0], outputmatrix[0]);
     //for (int j = 0 ; j < mynet.getML(0)->getOutputnum(); j++)
     //cout<<mynet.getML(0)->getOutdata()[j]<<endl;
     //cout<<mynet.getML(1)->getOutdata()<<endl;

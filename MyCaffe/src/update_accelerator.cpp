@@ -15,7 +15,7 @@ void ApplyUpdate(gradientData gradient, ioData data,weightData *output)
 	
 	if((gradient.gradientSize!=output->outputNum) || (data.dataSize!=output->inputNum))
 	{
-		cout<<"error param in forward"<<endl;
+		cout<<"error param in update"<<endl;
 		return;
 	}
     for (r = 0; r < (u32)(gradient.gradientSize); r++) {
