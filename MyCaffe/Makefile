@@ -3,7 +3,7 @@ INCLUDE	:=	includes/*.*
 OBJS	:=	src/*.*
 
 CC	:=	g++
-CFLAGS	:=	-lprotobuf
+CFLAGS	:=	-g -lprotobuf
 
 $(TARGET):	$(OBJS)
 	$(CC) -o $(TARGET) $(OBJS) $(CFLAGS)
