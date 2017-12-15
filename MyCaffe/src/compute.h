@@ -23,7 +23,7 @@ typedef struct WeightData       //weightdata
 }weightData;
 
 //暂时使用用固定学习率，如果使用动态学习率需要与权重对应输入
-#define TRAIN_RATE 0.001
+#define TRAIN_RATE 0.1
 
 void OutputGradient(ioData expectResult,ioData actualResult,gradientData *output);
 
