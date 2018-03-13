@@ -1,6 +1,8 @@
 #ifndef COMPUTE_H
 #define COMPUTE_H
 
+#include "math.h"
+
 typedef unsigned int u32;
 
 typedef struct IOData       //inputdata and outputdata
@@ -22,8 +24,26 @@ typedef struct WeightData       //weightdata
     int outputNum;
 }weightData;
 
+typedef struct ConvData
+{
+    int height; //输入图片的宽高，正方形图片
+    int img_num; //输入图片的数量
+    float ***img_data;
+}convData;
+
+typedef struct ConvWeight
+{
+    int inputNum;
+    int outputNum;
+    int kernelSize;
+    float ****weight;
+	IOData bias;
+}convWeight;
+
+
 //暂时使用用固定学习率，如果使用动态学习率需要与权重对应输入
-#define TRAIN_RATE 0.1
+#define TRAIN_RATE 1.1
+//#define USE_MALLOC_TEMP
 
 void OutputGradient(ioData expectResult,ioData actualResult,gradientData *output);
 
@@ -42,10 +62,27 @@ void Forward(ioData input, weightData weight,ioData *output);
 */
 void Backward(gradientData gradient, weightData weight,  ioData data ,gradientData *output);
 
+void Backward_fullconnect_afterpool(gradientData gradient, weightData weight, gradientData *output);
+
+void Backward_fullconnect_afterpool_FPGA(gradientData gradient, weightData weight, gradientData *output, int fd, int fd11);
 /*
 第l层网络，gradient为l层的梯度，data为l层的输入
 返回output为修改后l层的权重
 */
 void ApplyUpdate(gradientData gradient, ioData data,weightData *output);
+
+
+void Forward_conv(int stride, convData input, convWeight weight, convData *output);
+
+void Backward_conv(int stride, convData gradient, convWeight weight, convData *output);
+
+void Backward_conv_FPGA(int stride, convData gradient, convWeight weight, convData *output, int fd, int fd11);
+
+void Forward_pool(convData input, int kernelSize, int stride, convData *output);
+
+void Backward_pool(int kernelSize,int stride, convData gradient, convData data,convData *output);
+
+void Backward_pool_FPGA(int kernelSize,int stride, convData gradient, convData data,convData *output, int fd, int fd11);
+void ApplyUpdata_conv(int stride, convData gradient, convData data, convWeight *output);
 
 #endif

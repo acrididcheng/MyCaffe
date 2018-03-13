@@ -13,7 +13,6 @@ void Forward(ioData input, weightData weight,ioData *output)
 {
 	u32 r,c;
 	float sum = 0;
-
 	if(input.dataSize != weight.inputNum)
 	{
 		cout<<"error param in forward"<<endl;
@@ -24,8 +23,51 @@ void Forward(ioData input, weightData weight,ioData *output)
 		sum = 0;
 		for(c = 0; c < (weight.inputNum); c++)
 		{
-			sum = input.data[c]*weight.weight[r][c];
+			sum = sum+input.data[c]*weight.weight[r][c];
 		}
 		output->data[r] = activation_Sigma(sum, weight.weight[r][weight.inputNum]);
+        //printf("sum:%f ,output:%f\n",sum,output->data[r]);
+    }
+}
+
+void Forward_conv(int stride, convData input, convWeight weight, convData *output)
+{
+	int i, j, r, c;
+	
+	float **temp = gettempbuffer();
+    float **outputTemp = getoutputtempbufer();
+
+    nSize mapSize = {weight.kernelSize, weight.kernelSize}; // 设定卷积窗口大小
+    nSize inSize = {input.height, input.height}; // 设定输入图片的长宽
+    nSize outSize = {output->height, output->height}; // 输出图片的长宽
+    for (i = 0; i < (weight.outputNum); i++) { // 输出特征图个数
+            for (j = 0; j < (weight.inputNum); j++) { // 输入特征图个数
+                init_malloc_buffer();
+                convolution(weight.weight[i][j], mapSize, input.img_data[j],inSize, valid,(float **)temp,(float **)outputTemp); // 按照卷积核的顺序进行计算
+                add_mat(output->img_data[i], output->img_data[i], outSize, (float **)outputTemp, outSize); // 将C1-v[][]与mapout[][]相加
+            }
+            for (r = 0; r < outSize.r; r++) // 对第i个卷积核的输出图片作激励操作
+                for (c = 0; c < outSize.c; c++)
+                     output->img_data[i][r][c] = activation_Sigma(output->img_data[i][r][c], weight.bias.data[i]);
+    }
+}
+
+void Forward_pool(convData input, int kernelSize, int stride, convData *output)
+{
+	 int i, j, m, n,k;
+	 float sum = 0.0;
+	 int outSize = input.height/kernelSize;
+	for (k = 0; k < (input.img_num); k++) {
+        for (i = 0; i < outSize; i++)
+            for (j = 0; j < outSize; j++) { 
+                for (m = i * kernelSize; m < i * kernelSize + kernelSize; m++)
+                        for (n = j * kernelSize; n < j * kernelSize + kernelSize; n++)
+                                sum = sum + input.img_data[k][m][n];
+                output->img_data[k][i][j] = sum / (float)(kernelSize * kernelSize);
+				sum = 0.0;
+            }
+        //print_mat("print pool input",input.img_data[k],input.height,input.height);
+        //print_mat("print pool output",output->img_data[k],outSize,outSize);
+
     }
 }
